@@ -1,16 +1,19 @@
 from functools import total_ordering
+from pydoc import cli
 import random
 import pygame as pg
 pg.init()
 import var
 var.init()
 import classes
+import func_math as fm
 import func_objects as fo
 import os
 
 screen = pg.display.set_mode([var.screen_width, var.screen_height])
 clock = pg.time.Clock()
 run = True
+clicked_object = None
 
 counter = 0
 day = 0
@@ -41,9 +44,14 @@ while run:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             run = False
-            
-                    
-            
+        if event.type == pg.MOUSEBUTTONDOWN:
+            mx, my = pg.mouse.get_pos()
+            mo = fm.find_nearest_to_point(mx,my,var.list_wanderer)
+            if fm.distance_to_point(mo,mx,my) < 15:
+                clicked_object = mo
+            else:
+                clicked_object = None
+             
     screen.fill((100,200,120))
     
     # ==================== start loop ====================
@@ -67,18 +75,30 @@ while run:
         
         var.total_counter += 1
         
+        # backlog
+        
         print('Wand:', len(var.list_wanderer))
         print('Food:', len(var.list_food))   
         print('Day :', day)
         print('Time:', round((1440 / var.day_lenght) * var.total_counter // 60), ':', round((1440 / var.day_lenght) * var.total_counter % 60))
-        #print(round(var.list_wanderer[0].hunger))
-        #print(round(var.list_wanderer[0].sleep))
-        #print(var.list_wanderer[0].schedule)
-        #print(var.list_wanderer[0].state)
-        #print('Wa/T:', round(total_wanderer/var.total_counter,2))
-        #print('Fo/T:', round(total_food/var.total_counter,2))
+        print('')
+        if clicked_object != None:
+            print('Hunger:',round(clicked_object.hunger))
+            print('Sleep :',round(clicked_object.sleep))
+            print('Behavi:',clicked_object.schedule)
+            print('State :',clicked_object.state)
+            print('Parent:',clicked_object.parent)
+            print('Childr:',clicked_object.children)
 
 
+    # debug    
+    if clicked_object != None:
+        pg.draw.circle(screen,(255,255,0),(clicked_object.x,clicked_object.y),15,1)
+        for c in clicked_object.children:
+            pg.draw.line(screen,(255,0,255),(clicked_object.x,clicked_object.y),(c.x,c.y),1)
+        if clicked_object.parent != None:
+            pg.draw.line(screen,(0,255,255),(clicked_object.x,clicked_object.y),(clicked_object.parent.x,clicked_object.parent.y),1)
+    
     # behavior wanderer
     for wanderer in var.list_wanderer:
         fo.init_behavior(wanderer)

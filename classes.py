@@ -23,6 +23,9 @@ class Wanderer:
     schedule = []
     state = ''
     
+    parent = None
+    children = []
+    
     def __init__(
         self, 
         x, 
@@ -43,6 +46,8 @@ class Wanderer:
         self.schedule = []
         for a in range(10):
             self.schedule.append(random.choice(var.obj_state_wanderer))
+            
+        self.children = []
     
     # set the coordinates
     def set_xy(self,x,y):
@@ -119,7 +124,7 @@ class Wanderer:
     # scan area for food    
     def search_food(self):
         if self.hunger < self.hunger_full:
-            t = fm.find_nearest(self,var.list_food)
+            t = fm.find_nearest_to_object(self,var.list_food)
             if fm.distance_to_object(self,t) < self.sight and t != self:
                 self.chase(t)
             else:

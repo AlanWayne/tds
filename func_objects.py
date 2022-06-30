@@ -27,6 +27,11 @@ def init_behavior(object):
             object.grow()
         object.age += 1
         
+        # check children
+        for ch in object.children:
+            if ch.child == False:
+                object.children.remove(ch)
+        
         # actions
         object.action_1()
         object.action_2()
@@ -50,11 +55,13 @@ def init_behavior(object):
             if object.delay_breed == 0 and object.state == 'breed':
                 child0 = create_entity(object.x,object.y,classes.Wanderer,var.list_wanderer,1,object.scr)
                 child0.schedule = object.schedule
-                object.delay_breed += var.FPS * var.day_lenght
+                child0.parent = object
+                object.children.append(child0)
+                object.delay_breed += var.FPS * var.day_lenght / 3
                 object.hunger -= var.FPS * 8
                
         # death
-        if object.hunger <= 0 or object.sleep <= 0:
+        if object.hunger <= 0 or object.sleep <= 0 or object.age > (5 * var.day_lenght * var.FPS):
             var.list_wanderer.remove(object)
             object.death()
             

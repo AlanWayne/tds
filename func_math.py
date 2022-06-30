@@ -9,12 +9,21 @@ def distance_to_point(a,x,y):
 def distance_between(a,b,x,y):
     return ( math.sqrt ( pow ( ( x - a     ) , 2 ) + pow ( ( y - b     ) , 2 ) ) )
 
-def find_nearest(a,list):
+def find_nearest_to_object(a,list):
     d = a
     for b in list:
         if d == a:
             d = b
         if distance_to_object(a,b) < distance_to_object(a,d):
+            d = b
+    return d
+
+def find_nearest_to_point(x,y,list):
+    d = None
+    for b in list:
+        if d == None:
+            d = b
+        if distance_to_point(b,x,y) < distance_to_point(d,x,y):
             d = b
     return d
 
