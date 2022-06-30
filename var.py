@@ -11,3 +11,5 @@ def init():
     list_food = []
     global day_lenght
     day_lenght = 72
+    global obj_state_wanderer
+    obj_state_wanderer = ['breed','food','sleep','wander']

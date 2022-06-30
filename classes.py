@@ -1,13 +1,13 @@
-from msilib.schema import tables
 import pygame as pg 
 import random
-#from tds.functions import distance_between
 import var
 import func_math as fm
 import func_objects as fo
 
 class Wanderer:    
     hunger = var.FPS * 8
+    hunger_full = var.FPS * 16
+    hunger_one = var.FPS * 8
     delay_breed = var.FPS * var.day_lenght
     spd = 60 / var.FPS
     size = 5
@@ -95,7 +95,7 @@ class Wanderer:
     
     # scan area for food    
     def search_food(self):
-        if self.hunger < var.FPS * 16:
+        if self.hunger < self.hunger_full:
             t = fm.find_nearest(self,var.list_food)
             if fm.distance_to_object(self,t) < self.sight and t != self:
                 self.chase(t)
@@ -136,7 +136,7 @@ class Food:
     def collizion(self,list_wanderer):
         for wanderer in list_wanderer:
             if fm.distance_to_object(self,wanderer) < 10 and wanderer.hunger < 1000:
-                wanderer.hunger += var.FPS * 8
+                wanderer.hunger += wanderer.hunger_one
                 self.alive = False
                 del self
                 break
