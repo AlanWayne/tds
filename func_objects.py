@@ -28,7 +28,8 @@ def init_behavior(object):
         object.age += 1
         
         # actions
-        object.search_food()
+        object.action_1()
+        object.action_2()
         object.move()
         
         # hunger
@@ -38,15 +39,22 @@ def init_behavior(object):
         if object.hunger > (object.hunger_full + object.hunger_one):
             object.hunger = object.hunger_full
             
+        # sleep
+        if object.state == 'sleep':
+            object.sleep += 3
+        else:
+            object.sleep -= 1 
+        
         # breed
         if object.hunger > var.FPS * 16:
-            if object.delay_breed == 0:
-                create_entity(object.x,object.y,classes.Wanderer,var.list_wanderer,1,object.scr)
+            if object.delay_breed == 0 and object.state == 'breed':
+                child0 = create_entity(object.x,object.y,classes.Wanderer,var.list_wanderer,1,object.scr)
+                child0.schedule = object.schedule
                 object.delay_breed += var.FPS * var.day_lenght
                 object.hunger -= var.FPS * 8
                
         # death
-        if object.hunger <= 0:
+        if object.hunger <= 0 or object.sleep <= 0:
             var.list_wanderer.remove(object)
             object.death()
             

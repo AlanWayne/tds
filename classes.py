@@ -5,15 +5,23 @@ import func_math as fm
 import func_objects as fo
 
 class Wanderer:    
+    
     hunger = var.FPS * 8
     hunger_full = var.FPS * 16
     hunger_one = var.FPS * 8
+    
+    sleep = var.FPS * var.day_lenght * 0.75
+    sleep_full = var.FPS * var.day_lenght * 0.75
+    
     delay_breed = var.FPS * var.day_lenght
     spd = 60 / var.FPS
     size = 5
     age = 0
     sight = 120
     child = True
+    
+    schedule = []
+    state = ''
     
     def __init__(
         self, 
@@ -31,17 +39,32 @@ class Wanderer:
         
         self.scr = scr
         self.hunger = 500
+        
+        self.schedule = []
+        for a in range(10):
+            self.schedule.append(random.choice(var.obj_state_wanderer))
     
     # set the coordinates
-    def set_x(self,a):
-        self.x += a
-        
-    def set_y(self,a):
-        self.y += a
+    def set_xy(self,x,y):
+        self.x += x
+        self.y += y
         
     # drawing
     def draw(self):
         pg.draw.circle(self.scr, (255 - min(self.hunger * 0.255, 255), 100, min(self.hunger * 0.255,255)), (self.x, self.y), self.size)
+    
+    def action_1(self):
+        self.state = self.schedule[round(var.total_counter * 10 / var.day_lenght) - 1]
+                
+    def action_2(self):
+        if self.state == 'breed':
+            self.wander()
+        if self.state == 'food':
+            self.search_food()
+        if self.state == 'sleep':
+            self.go_sleep()
+        if self.state == 'wander':
+            self.wander()
         
     # movement
     def move(self):
@@ -103,6 +126,11 @@ class Wanderer:
                 self.wander()
         else:
             self.wander()
+            
+    # sleep
+    def go_sleep(self):
+        self.target_x = self.x
+        self.target_y = self.y
             
     # death       
     def death(self):

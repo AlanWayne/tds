@@ -13,7 +13,6 @@ clock = pg.time.Clock()
 run = True
 
 counter = 0
-total_counter = var.day_lenght
 day = 0
 #total_wanderer = 0
 #total_food = 0
@@ -21,10 +20,19 @@ day = 0
 # ==================== start once ====================
 
 # create wanderer
-for a in range(2):
+
+f = open('log_schedule','w')
+
+for a in range(10):
     ob = fo.create_entity(random.randint(20,var.screen_width - 20),random.randint(20,var.screen_height - 20),classes.Wanderer,var.list_wanderer,1,screen)
     ob.age = var.FPS * var.day_lenght
     ob.delay_breed = 0
+    for a in ob.schedule:
+        f.write(a)
+        f.write(' / ')
+    f.write('\n')
+    
+f.close
 
 # ====================  end once  ====================
 
@@ -33,6 +41,8 @@ while run:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             run = False
+            
+                    
             
     screen.fill((100,200,120))
     
@@ -48,21 +58,25 @@ while run:
         
         #total_wanderer += len(var.list_wanderer)
         #total_food += len(var.list_food)    
-        if total_counter == var.day_lenght:
+        if var.total_counter == var.day_lenght:
             day += 1
-            total_counter = 0
+            var.total_counter = 0
             rng = 100 - len(var.list_food)
             for a in range(rng):
                 fo.create_entity(random.randint(20,var.screen_width - 20),random.randint(20,var.screen_height - 20),classes.Food,var.list_food,1,screen)
         
-        total_counter += 1
+        var.total_counter += 1
         
         print('Wand:', len(var.list_wanderer))
         print('Food:', len(var.list_food))   
         print('Day :', day)
-        print('Time:', round((1440 / var.day_lenght) * total_counter // 60), ':', round((1440 / var.day_lenght) * total_counter % 60))
-        #print('Wa/T:', round(total_wanderer/total_counter,2))
-        #print('Fo/T:', round(total_food/total_counter,2))
+        print('Time:', round((1440 / var.day_lenght) * var.total_counter // 60), ':', round((1440 / var.day_lenght) * var.total_counter % 60))
+        #print(round(var.list_wanderer[0].hunger))
+        #print(round(var.list_wanderer[0].sleep))
+        #print(var.list_wanderer[0].schedule)
+        #print(var.list_wanderer[0].state)
+        #print('Wa/T:', round(total_wanderer/var.total_counter,2))
+        #print('Fo/T:', round(total_food/var.total_counter,2))
 
 
     # behavior wanderer
@@ -77,4 +91,13 @@ while run:
         
     pg.display.flip()
     
+    
+f = open('log_schedule','a')
+f.write('\n\n')
+for a in var.list_wanderer:
+    for b in a.schedule:
+        f.write(b)
+        f.write(' / ')
+    f.write('\n')
+f.close
 quit()

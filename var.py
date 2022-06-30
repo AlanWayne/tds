@@ -10,6 +10,8 @@ def init():
     global list_food
     list_food = []
     global day_lenght
-    day_lenght = 72
+    day_lenght = 720
     global obj_state_wanderer
     obj_state_wanderer = ['breed','food','sleep','wander']
+    global total_counter
+    total_counter = day_lenght
