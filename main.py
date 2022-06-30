@@ -9,6 +9,7 @@ import classes
 import func_math as fm
 import func_objects as fo
 import os
+import operator
 
 screen = pg.display.set_mode([var.screen_width, var.screen_height])
 clock = pg.time.Clock()
@@ -53,7 +54,11 @@ while run:
                 clicked_object = None
              
     screen.fill((100,200,120))
-    
+    bg_img = pg.image.load('images/bg_grass.jpg')
+    bg_img_width = bg_img.get_width()
+    for i in range(var.screen_width//bg_img_width + 1):
+        for j in range(var.screen_height//bg_img_width + 1):
+            screen.blit(bg_img,(i*50,j*50))
     # ==================== start loop ====================
     
     if counter == var.FPS:
@@ -78,6 +83,7 @@ while run:
         # backlog
         
         print('Wand:', len(var.list_wanderer))
+        print('Dead:', var.deaths)
         print('Food:', len(var.list_food))   
         print('Day :', day)
         print('Time:', round((1440 / var.day_lenght) * var.total_counter // 60), ':', round((1440 / var.day_lenght) * var.total_counter % 60))
@@ -106,7 +112,14 @@ while run:
     # behavior food
     for food in var.list_food:
         fo.init_behavior(food)
-        
+    
+    # draw
+    draw_list = var.list_food + var.list_wanderer
+    for dr in sorted(draw_list,key=operator.methodcaller('get_depth')):
+        dr.draw()
+    #draw_list = sorted(draw_list,key=y)
+    
+    
     # ====================  end loop  ====================
         
     pg.display.flip()

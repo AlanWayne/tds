@@ -33,8 +33,7 @@ def init_behavior(object):
                 object.children.remove(ch)
         
         # actions
-        object.action_1()
-        object.action_2()
+        object.action()
         object.move()
         
         # hunger
@@ -48,31 +47,18 @@ def init_behavior(object):
         if object.state == 'sleep':
             object.sleep += 3
         else:
-            object.sleep -= 1 
-        
-        # breed
-        if object.hunger > var.FPS * 16:
-            if object.delay_breed == 0 and object.state == 'breed':
-                child0 = create_entity(object.x,object.y,classes.Wanderer,var.list_wanderer,1,object.scr)
-                child0.schedule = object.schedule
-                child0.parent = object
-                object.children.append(child0)
-                object.delay_breed += var.FPS * var.day_lenght / 3
-                object.hunger -= var.FPS * 8
+            object.sleep -= 1         
                
         # death
         if object.hunger <= 0 or object.sleep <= 0 or object.age > (5 * var.day_lenght * var.FPS):
             var.list_wanderer.remove(object)
             object.death()
-            
-        # display
-        object.draw() 
+            var.deaths += 1
     
     # ======== food ========
     
     if type(object) == classes.Food:
         if object.alive:
             object.collizion(var.list_wanderer)
-            object.draw()
         else:
             var.list_food.remove(object)
