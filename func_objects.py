@@ -52,6 +52,10 @@ def init_behavior(object):
         # death
         if object.hunger <= 0 or object.sleep <= 0 or object.age > (5 * var.day_lenght * var.FPS):
             var.list_wanderer.remove(object)
+            if object.parent != None:
+                object.parent.children.remove(object)
+            for ch in object.children:
+                ch.parent = None
             object.death()
             var.deaths += 1
     

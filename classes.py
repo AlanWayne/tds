@@ -222,6 +222,7 @@ class Wanderer:
         self.spd *= 2
         self.sight *= 2
         self.child = False
+        self.parent = None
                     
               
             
