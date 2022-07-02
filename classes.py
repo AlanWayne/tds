@@ -1,3 +1,4 @@
+from winreg import ExpandEnvironmentStrings
 import pygame as pg 
 import random
 import var
@@ -9,7 +10,7 @@ class Wanderer:
     # stats
     frame = 0
     sprite_counter = 0
-    sprite_speed = round(var.FPS / 10)
+    sprite_speed = (60 / var.FPS) * 10
     sprite = sprite.spr_rabbit_walk[frame]
     x_axis = random.choice(['Left','Right'])
     depth = 0
@@ -68,29 +69,31 @@ class Wanderer:
         
     # drawing
     def draw(self):
+        
+        # stand
         if self.moving == False:
-            self.sprite = sprite.spr_rabbit_walk[0]
+            self.frame = 0
             self.sprite_counter = 0
-        elif self.moving == True:
-            if self.sprite_counter == 0:
-                self.frame += 1
-                if self.frame >= len(sprite.spr_rabbit_walk):
-                    self.frame = 0
-                self.sprite = sprite.spr_rabbit_walk[self.frame]
-            self.sprite_counter += 1
-            if self.sprite_counter == self.sprite_speed:
+        
+        # walk
+        if self.moving == True:
+            self.sprite_counter += self.sprite_speed
+            
+            if self.sprite_counter >= var.FPS:
                 self.sprite_counter = 0
-                    
+                self.frame += 1
+                
+            if self.frame >= len(sprite.spr_rabbit_walk):
+                self.frame = 0
+                
+        #set sprite
+        self.sprite = sprite.spr_rabbit_walk[self.frame]
+        
+        # rotation      
         if self.x_axis == 'Left':
-            if self.child == True:
-                self.scr.blit(self.sprite, (self.x - self.width/2, self.y - self.height))
-            else:
-                self.scr.blit(pg.transform.scale2x(self.sprite), (self.x - self.width/2, self.y - self.height))
-        elif self.x_axis == 'Right':
-            if self.child == True:
-                self.scr.blit(pg.transform.flip(self.sprite, True, False), (self.x - self.width/2, self.y - self.height))
-            else:
-                self.scr.blit(pg.transform.scale2x(pg.transform.flip(self.sprite, True, False)), (self.x - self.width/2, self.y - self.height))
+            self.scr.blit(pg.transform.scale(self.sprite, (self.width, self.height)), (self.x - self.width/2, self.y - self.height))
+        if self.x_axis == 'Right':
+            self.scr.blit((pg.transform.flip(pg.transform.scale(self.sprite, (self.width, self.height)), True, False)), (self.x - self.width/2, self.y - self.height))
         
     # get depth
     def get_depth(self):
@@ -99,6 +102,10 @@ class Wanderer:
         
     # action
     def action(self):
+        # move
+        self.move()
+        
+        # check state
         self.state_time = self.schedule[round(var.total_counter * 10 / var.day_lenght) - 1]
         
         if self.state_time == 'breed'  and self.hunger > self.hunger_full:
@@ -113,7 +120,40 @@ class Wanderer:
         if self.state_time == 'wander' and self.hunger > self.hunger_full/4:
             self.wander()
             self.state = 'wander'
+            
+        # check age
+        if self.child == True and self.age > (var.FPS * var.day_lenght):
+            self.grow()
+        self.age += 1
         
+        # check grown children
+        for ch in self.children:
+            if ch.child == False:
+                self.children.remove(ch)
+        
+        # hunger
+        self.hunger -= min(self.hunger,(1/var.FPS) * (1440/var.day_lenght))
+        if self.delay_breed > 0:
+            self.delay_breed -= 1
+        if self.hunger > (self.hunger_full + self.hunger_one):
+            self.hunger = self.hunger_full
+            
+        # sleep
+        if self.state == 'sleep':
+            self.sleep += 3
+        else:
+            self.sleep -= 1   
+            
+        # death
+        if self.hunger <= 0 or self.sleep <= 0 or self.age > (5 * var.day_lenght * var.FPS):
+            var.list_wanderer.remove(self)
+            if self.parent != None:
+                self.parent.children.remove(self)
+            for ch in self.children:
+                ch.parent = None
+            self.death()
+            var.deaths += 1
+            
     # movement
     def move(self):
         if self.target_x < self.x:
@@ -155,18 +195,18 @@ class Wanderer:
         nb = fm.find_nearest_brother(self,var.list_wanderer)
         if nb != 0:
             dtp = fm.distance_to_point(nb, self.x, self.y)
-            if dtp < 20:
+            if dtp < 10:
                 dx, dy = fm.relative_velocity(self.x, self.y, nb.x, nb.y)
                 if self.x < nb.x:
-                    self.x -= (20 - dtp) * dx
+                    self.x -= (10 - dtp) * dx
                 if self.x > nb.x:
-                    self.x += (20 - dtp) * dx
+                    self.x += (10 - dtp) * dx
                 if self.y < nb.y:
-                    self.y -= (20 - dtp) * dy
+                    self.y -= (10 - dtp) * dy
                 if self.y > nb.y:
-                    self.y += (20 - dtp) * dy
+                    self.y += (10 - dtp) * dy
     
-    # set target to the random point
+    # wander
     def wander(self):
         if random.randint(1,30) == 1:
             if fm.distance_to_point(self,self.target_x,self.target_y) < 10:
@@ -177,6 +217,17 @@ class Wanderer:
                     if self.parent != None:
                         self.target_x = self.parent.x + random.choice([-1,1]) * random.randint(25,50)
                         self.target_y = self.parent.y + random.choice([-1,1]) * random.randint(25,50)
+                    else:
+                        self.target_x += random.choice([-1,1]) * random.randint(25,50)
+                        self.target_y += random.choice([-1,1]) * random.randint(25,50)
+                        
+    # check for orphans    
+    def orphan(self):
+        if self.child == False:
+            for obj in var.list_wanderer:
+                if (obj.child == True) and (obj.parent == None) and (fm.distance_to_object(self,obj) < self.sight):
+                    obj.parent = self
+                    self.children.append(obj)
     
     # set target to exact object        
     def chase(self, object):
@@ -203,7 +254,9 @@ class Wanderer:
     def breed(self):
         if self.hunger > self.hunger_full:
             if self.delay_breed == 0:
-                child0 = fo.create_entity(self.x,self.y,Wanderer,var.list_wanderer,1,self.scr)
+                child_shift_x = random.randint(0,10) * random.choice([-1,1])
+                child_shift_y = (10 - child_shift_x) * random.choice([-1,1])
+                child0 = fo.create_entity(self.x + child_shift_x,self.y + child_shift_y,Wanderer,var.list_wanderer,1,self.scr)
                 child0.schedule = self.schedule
                 child0.parent = self
                 self.children.append(child0)
@@ -227,7 +280,6 @@ class Wanderer:
               
             
 class Food:
-    alive = True    
     height = 16
     width = 10
     depth = 0
@@ -252,11 +304,11 @@ class Food:
         self.depth = self.y
         return self.depth
         
-    def collizion(self,list_wanderer):
-        for wanderer in list_wanderer:
+    def action(self):
+        for wanderer in var.list_wanderer:
             if fm.distance_to_object(self,wanderer) < 10 and wanderer.hunger < 1000:
                 wanderer.hunger += wanderer.hunger_one
-                self.alive = False
+                var.list_food.remove(self)
                 del self
                 break
         

@@ -54,11 +54,11 @@ while run:
                 clicked_object = None
              
     screen.fill((100,200,120))
-    bg_img = pg.image.load('images/bg_grass.jpg')
+    bg_img = pg.image.load('images/bg_grass0.png')
     bg_img_width = bg_img.get_width()
     for i in range(var.screen_width//bg_img_width + 1):
         for j in range(var.screen_height//bg_img_width + 1):
-            screen.blit(bg_img,(i*50,j*50))
+            screen.blit(pg.transform.scale2x(bg_img),(i*64,j*64))
     # ==================== start loop ====================
     
     if counter == var.FPS:
@@ -96,7 +96,6 @@ while run:
             print('Parent:',clicked_object.parent)
             print('Childr:',clicked_object.children)
 
-
     # debug    
     if clicked_object != None:
         pg.draw.circle(screen,(255,255,0),(clicked_object.x,clicked_object.y),15,1)
@@ -105,13 +104,9 @@ while run:
         if clicked_object.parent != None:
             pg.draw.line(screen,(0,255,255),(clicked_object.x,clicked_object.y),(clicked_object.parent.x,clicked_object.parent.y),1)
     
-    # behavior wanderer
-    for wanderer in var.list_wanderer:
-        fo.init_behavior(wanderer)
-               
-    # behavior food
-    for food in var.list_food:
-        fo.init_behavior(food)
+    # objects action
+    for object in (var.list_wanderer + var.list_food):
+        object.action()
     
     # draw
     draw_list = var.list_food + var.list_wanderer
