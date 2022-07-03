@@ -15,6 +15,7 @@ def create_entity(x, y, type, parent):
     if type == classes.Food:
         object = classes.Food(x,y)
         var.list_food.append(object)
+        object.shadow = create_entity(x,y,classes.Shadow,object)
     # shadow
     if type == classes.Shadow:
         object = classes.Shadow(parent)
@@ -67,6 +68,6 @@ def find_nearest_brother(a,list):
             if fm.distance_to_object(a,b) < fm.distance_to_object(a,d):
                 d = b
     if d == a:
-        return 0
+        return None
     else:
         return d

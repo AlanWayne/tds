@@ -32,21 +32,25 @@ class Wanderer:
     target_x = 0
     target_y = 0
     
-    hunger = var.FPS * 8
     hunger_full = var.FPS * 16
-    hunger_one = var.FPS * 8
+    hunger = hunger_full
+    hunger_one = var.FPS * 4
     
-    sleep = var.FPS * var.day_lenght * 0.75
     sleep_full = var.FPS * var.day_lenght * 0.75
+    sleep = sleep_full
     
     schedule = []
     state_time = ''
     state = ''
     
     child = True
-    parent = None
+    parent_f = None
+    parent_m = None
     children = []
     delay_breed = var.FPS * var.day_lenght
+    
+    sex = ''
+    partner = None
     
     def __init__(
         self, 
@@ -56,13 +60,17 @@ class Wanderer:
         self.x = x
         self.y = y
         
-        self.hunger = 500
+        self.hunger = self.hunger_full / 2 + random.randint(-self.hunger_full/5,self.hunger_full/5)
+        self.sleep = self.sleep_full / 2 + random.randint(-self.sleep_full/5,self.sleep_full/5)
         
         self.schedule = []
         for a in range(10):
             self.schedule.append(random.choice(var.obj_state_wanderer))
             
         self.children = []
+        self.sprite = pg.transform.scale(self.sprite,(self.width,self.height))
+        
+        self.sex = random.choice(['male','female'])
                 
     # set the coordinates
     def set_xy(self,x,y):
@@ -73,13 +81,30 @@ class Wanderer:
     def draw(self,screen):
         if self.x > var.obj_camera.x and self.x < (var.obj_camera.x + var.screen_width) and self.y > var.obj_camera.y and self.y < (var.obj_camera.y + var.screen_height):
         
+            # sleep
+            if self.state == 'sleep':
+                self.sprite_counter += self.sprite_speed
+                
+                if self.sprite_counter >= var.FPS:
+                    self.sprite_counter = 0
+                    self.frame += 1
+                
+                if self.frame >= len(sprite.spr_rabbit_z):
+                    self.frame = 0
+                    
+                self.sprite = sprite.spr_rabbit_sleep[0]
+                self.sprite = pg.transform.scale(self.sprite,(self.width,self.height))
+            
             # stand
-            if self.moving == False:
+            elif self.moving == False:
                 self.frame = 0
                 self.sprite_counter = 0
             
+                self.sprite = sprite.spr_rabbit_walk[self.frame]
+                self.sprite = pg.transform.scale(self.sprite,(self.width,self.height))
+            
             # walk
-            if self.moving == True:
+            elif self.moving == True:
                 self.sprite_counter += self.sprite_speed
                 
                 if self.sprite_counter >= var.FPS:
@@ -89,19 +114,23 @@ class Wanderer:
                 if self.frame >= len(sprite.spr_rabbit_walk):
                     self.frame = 0
                     
-            #set sprite
-            self.sprite = sprite.spr_rabbit_walk[self.frame]
+                self.sprite = sprite.spr_rabbit_walk[self.frame]
+                self.sprite = pg.transform.scale(self.sprite,(self.width,self.height))
             
             # rotation      
             if self.x_axis == 'Left':
-                screen.blit(pg.transform.scale(self.sprite, (self.width, self.height)), (self.x - self.width/2 - var.obj_camera.x, self.y - self.height - var.obj_camera.y))
+                screen.blit(self.sprite, (self.x - self.width/2 - var.obj_camera.x, self.y - self.height - var.obj_camera.y))
+                if self.state == 'sleep':
+                    screen.blit(pg.transform.scale2x(sprite.spr_rabbit_z[self.frame]),(self.x - self.width/2 - var.obj_camera.x, self.y - self.height * 2 - var.obj_camera.y))
             if self.x_axis == 'Right':
-                screen.blit((pg.transform.flip(pg.transform.scale(self.sprite, (self.width, self.height)), True, False)), ((self.x - self.width/2) - var.obj_camera.x, (self.y - self.height) - var.obj_camera.y))
+                screen.blit((pg.transform.flip(self.sprite, True, False)), ((self.x - self.width/2) - var.obj_camera.x, (self.y - self.height) - var.obj_camera.y))
+                if self.state == 'sleep':
+                    screen.blit(pg.transform.scale2x(sprite.spr_rabbit_z[self.frame]),(self.x - var.obj_camera.x, self.y - self.height * 2 - var.obj_camera.y))
         
     # get depth
     def get_depth(self):
         self.depth = self.y
-        return self.depth
+        return self.y
         
     # action
     def action(self):
@@ -109,21 +138,39 @@ class Wanderer:
         self.move()
         
         # check state
+        '''
         self.state_time = self.schedule[round(var.total_counter * 10 / var.day_lenght) - 1]
-        
-        if self.state_time == 'breed'  and self.hunger > self.hunger_full:
+        if self.state_time == 'breed'  and self.hunger > self.hunger_full and self.sleep > self.sleep_full / 8:
             self.breed()
             self.state = 'breed'
         if self.state_time == 'food'    or self.hunger < self.hunger_full/4:
             self.search_food()
             self.state = 'food'
-        if self.state_time == 'sleep'  and self.hunger > self.hunger_full/4:
+        if (self.state_time == 'sleep' or self.sleep < self.sleep_full/8)  and self.hunger > self.hunger_full/4 and self.sleep < self.sleep_full:
             self.go_sleep()
             self.state = 'sleep'
-        if self.state_time == 'wander' and self.hunger > self.hunger_full/4:
+        if self.state_time == 'wander' and self.hunger > self.hunger_full/4 and self.sleep > self.sleep_full / 8:
+            self.wander()
+            self.state = 'wander'
+        '''
+        
+        if ((self.sleep < self.sleep_full/8 or (self.state == 'sleep' and self.sleep < self.sleep_full))) and self.hunger > self.hunger_full/8:
+            self.go_sleep()
+            self.state = 'sleep'
+        
+        elif self.hunger < (self.hunger_full - self.hunger_one):
+            self.search_food()
+            self.state = 'food'
+        
+        elif self.delay_breed == 0:
+            self.breed()
+            self.state = 'breed'
+        
+        else:
             self.wander()
             self.state = 'wander'
             
+
         # check age
         if self.child == True and self.age > (var.FPS * var.day_lenght):
             self.grow()
@@ -149,11 +196,15 @@ class Wanderer:
             
         # death
         if self.hunger <= 0 or self.sleep <= 0 or self.age > (5 * var.day_lenght * var.FPS):
-            var.list_wanderer.remove(self)
-            if self.parent != None:
-                self.parent.children.remove(self)
+            if self.parent_f != None:
+                self.parent_f.children.remove(self)
+            if self.parent_m != None:
+                self.parent_m.children.remove(self)
             for ch in self.children:
-                ch.parent = None
+                if self.sex == 'female':
+                    ch.parent_f = None
+                elif self.sex == 'male':
+                    ch.parent_m = None
             self.death()
             var.deaths += 1
             
@@ -219,9 +270,12 @@ class Wanderer:
                     self.target_x += random.choice([-1,1]) * random.randint(25,50)
                     self.target_y += random.choice([-1,1]) * random.randint(25,50)
                 else:
-                    if self.parent != None:
-                        self.target_x = self.parent.x + random.choice([-1,1]) * random.randint(25,50)
-                        self.target_y = self.parent.y + random.choice([-1,1]) * random.randint(25,50)
+                    if self.parent_f != None:
+                        self.target_x = self.parent_f.x + random.choice([-1,1]) * random.randint(25,50)
+                        self.target_y = self.parent_f.y + random.choice([-1,1]) * random.randint(25,50)
+                    elif self.parent_m != None:
+                        self.target_x = self.parent_m.x + random.choice([-1,1]) * random.randint(25,50)
+                        self.target_y = self.parent_m.y + random.choice([-1,1]) * random.randint(25,50)
                     else:
                         self.target_x += random.choice([-1,1]) * random.randint(25,50)
                         self.target_y += random.choice([-1,1]) * random.randint(25,50)
@@ -230,8 +284,11 @@ class Wanderer:
     def orphan(self):
         if self.child == False:
             for obj in var.list_wanderer:
-                if (obj.child == True) and (obj.parent == None) and (fm.distance_to_object(self,obj) < self.sight):
-                    obj.parent = self
+                if (obj.child == True) and (obj.parent_f == None) and (obj.parent_m == None) and (fm.distance_to_object(self,obj) < self.sight):
+                    if self.sex == 'male':
+                        obj.parent_m = self
+                    elif self.sex == 'female':
+                        obj.parent_f = self
                     self.children.append(obj)
     
     # set target to exact object        
@@ -257,21 +314,45 @@ class Wanderer:
          
     # breed
     def breed(self):
-        if self.hunger > self.hunger_full:
-            if self.delay_breed == 0:
-                child_shift_x = random.randint(0,10) * random.choice([-1,1])
-                child_shift_y = (10 - child_shift_x) * random.choice([-1,1])
-                child0 = fo.create_entity(self.x + child_shift_x,self.y + child_shift_y,Wanderer,None)
-                child0.schedule = self.schedule
-                child0.parent = self
-                self.children.append(child0)
-                self.delay_breed += var.FPS * var.day_lenght / 3
-                self.hunger -= var.FPS * 8
-    
+        if self.sex == 'male':
+            if self.partner == None:
+                check_p = []
+                for cp in var.list_wanderer:
+                    if cp.sex == 'female':
+                        if cp.child == False: 
+                            if cp.partner == None:
+                                check_p.append(cp)
+                cp1 = fo.find_nearest_brother(self,check_p)
+                if cp1 != None:
+                    self.partner = cp1
+                    cp1.partner = self
+            else:
+                if fm.distance_to_object(self,self.partner) > 32:
+                    self.target_x = self.partner.x
+                    self.target_y = self.partner.y
+        if self.sex == 'female':
+            if self.partner != None:
+                if fm.distance_to_object(self,self.partner) > 32:
+                    self.target_x = self.partner.x
+                    self.target_y = self.partner.y
+                else:
+                    ch = fo.create_entity((self.x + self.partner.x)/2,(self.y + self.partner.y)/2,Wanderer,None)
+                    ch.parent_f = self
+                    ch.parent_m = self.partner
+                    self.children.append(ch)
+                    self.partner.children.append(ch)
+                    self.delay_breed += var.FPS * var.day_lenght / 3
+                    self.partner.delay_breed +=var.FPS * var.day_lenght / 3
+                    self.hunger -= self.hunger_full / 2
+                    self.partner.hunger -= self.hunger_full / 2
+            else:
+                self.wander()
+                
     # death       
     def death(self):
         #fo.create_entity(self.x,self.y,Food,var.list_food,None)
         var.deaths += 1
+        var.list_wanderer.remove(self)
         del self
                   
     # grow up
@@ -281,16 +362,18 @@ class Wanderer:
         self.spd *= 2
         self.sight *= 2
         self.child = False
-        self.parent = None
+        self.parent_f = None
+        self.parent_m = None
+        self.sprite = pg.transform.scale(self.sprite,(self.width,self.height))
           
 # ================================ food ================================
 
 class Food:
-    height = 16
-    width = 10
+    height = 32
+    width = 32
     depth = 0
     sprite0 = random.choice(sprite.spr_carrot)
-    sprite_rot = None
+    shadow = None
         
     def __init__(
         self, 
@@ -300,21 +383,17 @@ class Food:
         self.x = x
         self.y = y
         self.depth = self.y
-        self.sprite_rot = random.choice([True,False])
         self.sprite0 = random.choice(sprite.spr_carrot)
 
     # draw
     def draw(self,screen):
         if self.x > var.obj_camera.x and self.x < (var.obj_camera.x + var.screen_width) and self.y > var.obj_camera.y and self.y < (var.obj_camera.y + var.screen_height):
-            if self.sprite_rot == True:
-                screen.blit(pg.transform.flip(pg.transform.scale(self.sprite0,(32,32)),True,False), (self.x - self.width/2 - var.obj_camera.x, self.y - self.height - var.obj_camera.y))
-            else:
-                screen.blit(pg.transform.scale(self.sprite0,(32,32)), (self.x - self.width/2 - var.obj_camera.x, self.y - self.height - var.obj_camera.y))
+            screen.blit(pg.transform.scale(self.sprite0,(self.height,self.width)), (self.x - self.width/2 - var.obj_camera.x, self.y - self.height - var.obj_camera.y))
         
     # get depth
     def get_depth(self):
         self.depth = self.y
-        return self.depth
+        return self.y
         
     # action
     def action(self):
@@ -330,6 +409,7 @@ class Food:
             
     def death(self):
         var.list_food.remove(self)
+        self.shadow.master = None
         del self
             
 # ================================ shadow ================================
@@ -351,10 +431,15 @@ class Shadow:
             self.y = self.master.y
             
             if type(self.master) == Wanderer:
-                frame = self.master.frame
+                if self.master.state == 'sleep':
+                    frame = 1
+                else: 
+                    frame = self.master.frame
                 self.sprite0 = sprite.spr_shadow_rabbit[frame]
                 if self.master.child == False:
-                    self.sprite0 = pg.transform.scale(self.sprite0,(36,16))
+                    self.sprite0 = pg.transform.scale2x(self.sprite0) #(self.sprite0,(36,16))
+            elif type(self.master) == Food:
+                self.sprite0 = pg.transform.scale2x(sprite.spr_shadow_carrot[0])
         else:
             var.list_shadow.remove(self)
             del self
@@ -362,7 +447,7 @@ class Shadow:
     def draw(self,screen):
         if self.x > var.obj_camera.x and self.x < (var.obj_camera.x + var.screen_width) and self.y > var.obj_camera.y and self.y < (var.obj_camera.y + var.screen_height):
             if screen != None and self.sprite0 != None:
-                screen.blit(self.sprite0, (self.x - self.sprite0.get_width()/2 - var.obj_camera.x , self.y - self.sprite0.get_height()/2 - var.obj_camera.y))
+                screen.blit(self.sprite0, (self.x - self.sprite0.get_width()/2 - var.obj_camera.x , self.y - self.sprite0.get_height()/2 - var.obj_camera.y - 2))
             
     # get depth
     def get_depth(self):
@@ -380,6 +465,12 @@ class Camera:
     m_down = False
     m_up = False
 
+    drag = False
+    drag_x = 0
+    drag_y = 0
+    drag_mx = 0
+    drag_my = 0
+    
     speed = 50
     #counter_speed = var.FPS / 30
     #counter = 0
@@ -389,24 +480,40 @@ class Camera:
         self.y = var.scene_height / 2 - var.screen_height / 2
     
     def action(self):      
-        keys=pg.key.get_pressed()
-        #if self.counter == 0:
-        if keys[pg.K_LEFT]:
+        # arrows control
+        key0 = pg.key.get_pressed()
+        
+        if key0[pg.K_LEFT]:
             #self.counter = self.counter_speed
             self.x -= self.speed
         
-        if keys[pg.K_RIGHT]:
+        if key0[pg.K_RIGHT]:
             #self.counter = self.counter_speed
             self.x += self.speed
                     
-        if keys[pg.K_UP]:
+        if key0[pg.K_UP]:
             #self.counter = self.counter_speed
             self.y -= self.speed
         
-        if keys[pg.K_DOWN]:
+        if key0[pg.K_DOWN]:
             #self.counter = self.counter_speed
             self.y += self.speed
                     
+        # mouse control
+        mouse0 = pg.mouse.get_pressed()
+        
+        if mouse0[2]:
+            mx, my = pg.mouse.get_pos()
+            self.x = self.drag_x - (mx - self.drag_mx)
+            self.y = self.drag_y - (my - self.drag_my)
+        else:
+            self.drag_x = self.x
+            self.drag_y = self.y
+            mx, my = pg.mouse.get_pos()
+            self.drag_mx = mx
+            self.drag_my = my
+            
+        # borders            
         if self.x < 0:
             self.x = 0
         elif self.x > var.scene_width - var.screen_width:
@@ -416,6 +523,3 @@ class Camera:
         elif self.y > var.scene_height - var.screen_height:
             self.y = var.scene_height - var.screen_height
         
-
-        #if self.counter > 0:
-        #    self.counter -= 1
