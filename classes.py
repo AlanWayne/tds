@@ -15,7 +15,7 @@ class Wanderer:
     name = 'rabbit'
     frame = 0
     sprite_counter = 0
-    sprite_speed = (60 / var.FPS) * 10
+    sprite_speed = (60 / var.FPS) * 30
     sprite = sprite.spr_rabbit_walk[frame]
     x_axis = random.choice(['Left','Right'])
     depth = 0
@@ -24,7 +24,7 @@ class Wanderer:
     
     x = 0
     y = 0
-    spd = 30 / var.FPS
+    spd = 90 / var.FPS
     height = 14
     width = 16
     age = 0
@@ -138,21 +138,6 @@ class Wanderer:
         self.move()
         
         # check state
-        '''
-        self.state_time = self.schedule[round(var.total_counter * 10 / var.day_lenght) - 1]
-        if self.state_time == 'breed'  and self.hunger > self.hunger_full and self.sleep > self.sleep_full / 8:
-            self.breed()
-            self.state = 'breed'
-        if self.state_time == 'food'    or self.hunger < self.hunger_full/4:
-            self.search_food()
-            self.state = 'food'
-        if (self.state_time == 'sleep' or self.sleep < self.sleep_full/8)  and self.hunger > self.hunger_full/4 and self.sleep < self.sleep_full:
-            self.go_sleep()
-            self.state = 'sleep'
-        if self.state_time == 'wander' and self.hunger > self.hunger_full/4 and self.sleep > self.sleep_full / 8:
-            self.wander()
-            self.state = 'wander'
-        '''
         
         if ((self.sleep < self.sleep_full/8 or (self.state == 'sleep' and self.sleep < self.sleep_full))) and self.hunger > self.hunger_full/8:
             self.go_sleep()
@@ -353,6 +338,7 @@ class Wanderer:
         #fo.create_entity(self.x,self.y,Food,var.list_food,None)
         var.deaths += 1
         var.list_wanderer.remove(self)
+        self.shadow.master = None
         del self
                   
     # grow up

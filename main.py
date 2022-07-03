@@ -60,7 +60,7 @@ while run:
     # background         
     
     screen.fill((100,200,120))
-    bg_img = pg.image.load('images/bg_grass0.png')
+    bg_img = pg.image.load('images/bg_grass.png')
     bg_img_width = bg_img.get_width()
     
     

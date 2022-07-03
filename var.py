@@ -7,9 +7,9 @@ def init():
     FPS = 60
     
     global scene_width
-    scene_width = 2000
+    scene_width = 1500
     global scene_height 
-    scene_height = 2000
+    scene_height = 1500
     
     global list_wanderer
     list_wanderer = []
