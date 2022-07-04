@@ -1,18 +1,21 @@
 from functools import total_ordering
 from pydoc import cli
-import random
+
 import pygame as pg
 pg.init()
 import var
 var.init()
+screen = pg.display.set_mode((var.screen_width, var.screen_height),pg.RESIZABLE)
+
+import random
 import classes
 import func_math as fm
 import func_objects as fo
 import os
 import operator
 import drawable
+import sprite
 
-screen = pg.display.set_mode([var.screen_width, var.screen_height])
 clock = pg.time.Clock()
 run = True
 clicked_object = None
@@ -41,6 +44,16 @@ f.close
 
 fo.create_entity(0,0,classes.Camera,None)
 
+for a in range(50 - len(var.list_food)):
+    fo.create_entity(random.randint(0, var.scene_width), random.randint(0, var.scene_height),classes.Food,None)
+
+# create backgroud
+screen.fill((100,200,120))  
+for i in range(var.scene_width//64 + 1):
+    for j in range(var.scene_height//64 + 1):
+        bg = classes.Background(i,j)
+        var.bg_list.append(bg)
+
 # ====================  end once  ====================
 
 while run:
@@ -56,21 +69,15 @@ while run:
                     clicked_object = mo
                 else:
                     clicked_object = None
-    
-    # background         
-    
-    screen.fill((100,200,120))
-    bg_img = pg.image.load('images/bg_grass.png')
-    bg_img_width = bg_img.get_width()
-    
-    
+        if event.type == pg.VIDEORESIZE:
+            var.screen_width = screen.get_width()
+            var.screen_height = screen.get_height()
+            
+        
     # ==================== start loop ====================
     
     if counter == var.FPS:
         counter = 0
-    
-    for a in range(100 - len(var.list_food)):
-        fo.create_entity(random.randint(0, var.scene_width), random.randint(0, var.scene_height),classes.Food,None)
     
     if counter == 0:
            
@@ -83,20 +90,22 @@ while run:
         # backlog
         
         os.system('cls' if os.name == 'nt' else 'clear')
-        print('Wand:', len(var.list_wanderer))
-        print('Dead:', var.deaths)
-        #print('Food:', len(var.list_food))   
+        #print('Wand:', len(var.list_wanderer))
+        #print('Dead:', var.deaths) 
         print('Day :', day)
         print('Time:', round((1440 / var.day_lenght) * var.total_counter // 60), ':', round((1440 / var.day_lenght) * var.total_counter % 60))
+        print('FPS :', round(clock.get_fps(),1))
         print('')
-        if clicked_object != None:
+        '''if clicked_object != None:
+            print('Positi:',round(clicked_object.x),round(clicked_object.y))
+            print('Mouse :',pg.mouse.get_pos())
             print('Hunger:',round(clicked_object.hunger))
             print('Sleep :',round(clicked_object.sleep))
             print('State :',clicked_object.state)
             print('Sex   :',clicked_object.sex)
             print('Patner:',clicked_object.partner)
             
-            print('')
+            print('')'''
 
     
     # objects action
@@ -107,12 +116,9 @@ while run:
     
     # draw
     
-        #background
-    for i in range(var.scene_width//bg_img_width + 1):
-        for j in range(var.scene_height//bg_img_width + 1):
-            if i*64 > var.obj_camera.x - 64 and i*64 < (var.obj_camera.x + var.screen_width) and j*64 > var.obj_camera.y - 64 and j*64 < (var.obj_camera.y + var.screen_height):
-                screen.blit(pg.transform.scale2x(bg_img),(i*64 - var.obj_camera.x,j*64 - var.obj_camera.y))
-            
+    for bg in var.bg_list:
+        bg.draw(screen)
+    
         # shadow      
     draw_list = var.list_shadow
     for dr in sorted(draw_list,key=operator.methodcaller('get_depth')):
@@ -189,6 +195,22 @@ while run:
             [255,0,0],
             [0,0,255]
         )
+            # sex
+        if clicked_object.sex == 'female':
+            screen.blit(
+                pg.transform.scale2x(sprite.spr_sex[0]),
+                (clicked_object.x - var.obj_camera.x + round(clicked_object.sprite.get_width() / 2),
+                clicked_object.y - var.obj_camera.y - round(clicked_object.sprite.get_height() * 1.5 + 5))
+                
+            )
+        else:
+            screen.blit(
+                pg.transform.scale2x(sprite.spr_sex[1]),
+                (clicked_object.x - var.obj_camera.x + round(clicked_object.sprite.get_width() / 2 + 4),
+                clicked_object.y - var.obj_camera.y - round(clicked_object.sprite.get_height() * 1.5 + 5))
+                
+            )
+            
         
     counter += 1
     

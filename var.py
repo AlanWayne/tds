@@ -7,9 +7,9 @@ def init():
     FPS = 60
     
     global scene_width
-    scene_width = 1500
+    scene_width = 2000
     global scene_height 
-    scene_height = 1500
+    scene_height = 2000
     
     global list_wanderer
     list_wanderer = []
@@ -17,9 +17,11 @@ def init():
     list_food = []
     global list_shadow
     list_shadow = []
+    global bg_list
+    bg_list = []
     
     global day_lenght
-    day_lenght = 72
+    day_lenght = 720
     global obj_state_wanderer
     obj_state_wanderer = ['breed','food','sleep','wander']
     global total_counter

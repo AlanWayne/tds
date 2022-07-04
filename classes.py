@@ -1,4 +1,5 @@
 from doctest import master
+from re import X
 from winreg import ExpandEnvironmentStrings
 import pygame as pg 
 import random
@@ -12,29 +13,40 @@ import var
 
 class Wanderer:    
     # stats
+        # name
     name = 'rabbit'
+        # position
+    x = 0
+    y = 0
+        # speed
+    spd0 = 30 / var.FPS
+    spd = spd0
+        #size
+    height = 14
+    width = 16
+        # age
+    age = 0
+        # sight
+    sight = 250
+        # target
+    target_x = 0
+    target_y = 0
+    
     frame = 0
+        # sprite speed
     sprite_counter = 0
-    sprite_speed = (60 / var.FPS) * 30
+    sprite_speed0 = 20
+    sprite_speed = spd * sprite_speed0
     sprite = sprite.spr_rabbit_walk[frame]
     x_axis = random.choice(['Left','Right'])
     depth = 0
     moving = False
     shadow = None
     
-    x = 0
-    y = 0
-    spd = 90 / var.FPS
-    height = 14
-    width = 16
-    age = 0
-    sight = 250
-    target_x = 0
-    target_y = 0
-    
     hunger_full = var.FPS * 16
     hunger = hunger_full
     hunger_one = var.FPS * 4
+    hunger_child = False
     
     sleep_full = var.FPS * var.day_lenght * 0.75
     sleep = sleep_full
@@ -133,17 +145,18 @@ class Wanderer:
         return self.y
         
     # action
-    def action(self):
-        # move
-        self.move()
+    def action(self):     
         
         # check state
         
-        if ((self.sleep < self.sleep_full/8 or (self.state == 'sleep' and self.sleep < self.sleep_full))) and self.hunger > self.hunger_full/8:
+        if self.hunger_child == True:
+            self.feed()
+            self.state = 'feed'
+            
+        elif ((self.sleep < self.sleep_full/8 or (self.state == 'sleep' and self.sleep < self.sleep_full))) and self.hunger > self.hunger_full/8:
             self.go_sleep()
-            self.state = 'sleep'
         
-        elif self.hunger < (self.hunger_full - self.hunger_one):
+        elif self.hunger < (self.hunger_full - self.hunger_one) or self.hunger_child == True:
             self.search_food()
             self.state = 'food'
         
@@ -180,7 +193,7 @@ class Wanderer:
             self.sleep -= 1   
             
         # death
-        if self.hunger <= 0 or self.sleep <= 0 or self.age > (5 * var.day_lenght * var.FPS):
+        if self.hunger <= 0 or self.age > (5 * var.day_lenght * var.FPS):
             if self.parent_f != None:
                 self.parent_f.children.remove(self)
             if self.parent_m != None:
@@ -192,6 +205,18 @@ class Wanderer:
                     ch.parent_m = None
             self.death()
             var.deaths += 1
+            
+        # sleepness
+        if self.sleep > 0:
+            self.spd = self.spd0
+            self.sprite_speed = self.sprite_speed0
+        else:
+            self.spd = self.spd0 / 2
+            self.sprite_speed = self.sprite_speed0 / 2
+            
+        # move
+        self.move()
+            
             
     # movement
     def move(self):
@@ -284,19 +309,82 @@ class Wanderer:
     # scan area for food    
     def search_food(self):
         if self.hunger < self.hunger_full:
-            t = fo.find_nearest_to_object(self,var.list_food)
-            if fm.distance_to_object(self,t) < self.sight and t != self:
-                self.chase(t)
+            if self.child == True and self.parent_f != None and self.hunger < self.hunger_full/2:
+                self.target_x = self.parent_f.x
+                self.target_y = self.parent_f.y
+                self.parent_f.hunger_child = True
+            elif self.child == True and self.parent_m != None and self.hunger < self.hunger_full/2:
+                self.target_x = self.parent_m.x
+                self.target_y = self.parent_m.y
+                self.parent_m.hunger_child = True
             else:
-                self.wander()
+                t = fo.find_nearest_to_object(self,var.list_food)
+                if fm.distance_to_object(self,t) < self.sight and t != self:
+                    self.chase(t)
+                else:
+                    self.wander()
         else:
             self.wander()
             
+    # feed the child
+    def feed(self):
+        if self.sex == 'female' or (self.sex == 'male' and self.partner == None):
+            if len(self.children) > 0:
+                for ch in self.children:
+                    if ch.hunger < self.hunger:
+                        if self.hunger > self.hunger_one * 2:
+                            if fm.distance_to_object(self,ch) < 32:
+                                self.hunger -= self.hunger_one
+                                ch.hunger += ch.hunger_one
+                                self.hunger_child = False
+                            else:
+                                self.target_x = ch.x
+                                self.target_y = ch.y
+                        else:
+                            self.search_food()
+                            self.state = 'food'
+                    else:
+                        self.search_food()
+                        self.state = 'food'
+            else:
+                self.search_food()
+                self.state = 'food'
+        else:
+            self.search_food()
+            self.state = 'food'
+
     # sleep
     def go_sleep(self):
-        self.target_x = self.x
-        self.target_y = self.y
-         
+        if self.state != 'sleep':
+            if self.parent_f != None:
+                if fm.distance_to_object(self,self.parent_f) < 64:
+                    self.state = 'sleep'
+                    self.target_x = self.x
+                    self.target_y = self.y
+                else:
+                    self.target_x = self.parent_f.x
+                    self.target_y = self.parent_f.y
+            elif self.parent_m != None:
+                if fm.distance_to_object(self,self.parent_m) < 64:
+                    self.state = 'sleep'
+                    self.target_x = self.x
+                    self.target_y = self.y
+                else:
+                    self.target_x = self.parent_m.x
+                    self.target_y = self.parent_m.y
+            elif self.partner != None:
+                if fm.distance_to_object(self,self.partner) < 64:
+                    self.state = 'sleep'
+                    self.target_x = self.x
+                    self.target_y = self.y
+                else:
+                    self.target_x = self.partner.x
+                    self.target_y = self.partner.y
+            else:
+                    self.state = 'sleep'
+                    self.target_x = self.x
+                    self.target_y = self.y
+             
     # breed
     def breed(self):
         if self.sex == 'male':
@@ -345,7 +433,7 @@ class Wanderer:
     def grow(self):
         self.height *= 2
         self.width *= 2
-        self.spd *= 2
+        self.spd0 *= 2
         self.sight *= 2
         self.child = False
         self.parent_f = None
@@ -396,6 +484,7 @@ class Food:
     def death(self):
         var.list_food.remove(self)
         self.shadow.master = None
+        fo.create_entity(random.randint(0, var.scene_width), random.randint(0, var.scene_height),Food,None)        
         del self
             
 # ================================ shadow ================================
@@ -457,7 +546,7 @@ class Camera:
     drag_mx = 0
     drag_my = 0
     
-    speed = 50
+    speed = 16
     #counter_speed = var.FPS / 30
     #counter = 0
     
@@ -509,3 +598,18 @@ class Camera:
         elif self.y > var.scene_height - var.screen_height:
             self.y = var.scene_height - var.screen_height
         
+# ================================ background ================================
+class Background:
+    sprite = None
+    x = 0
+    y = 0
+    
+    def __init__(self,x,y):
+        self.sprite = random.choice(sprite.spr_bg_grass)
+        self.x = x * 64
+        self.y = y * 64
+        #self.width = self.sprite.get_width()
+        
+    def draw(self,screen):
+        if self.x > var.obj_camera.x - 64 and self.x < (var.obj_camera.x + var.screen_width) and self.y > var.obj_camera.y - 64 and self.y < (var.obj_camera.y + var.screen_height):
+            screen.blit(pg.transform.scale2x(self.sprite),(self.x - var.obj_camera.x,self.y - var.obj_camera.y))
