@@ -1,15 +1,15 @@
+import pygame as pg
+
 def init():
     global screen_width
-    screen_width = 1024
     global screen_height
-    screen_height = 768
+    screen_width, screen_height = 1024, 768
     global FPS
     FPS = 60
     
     global scene_width
-    scene_width = 2000
     global scene_height 
-    scene_height = 2000
+    scene_width, scene_height = pg.display.get_desktop_sizes()[0]
     
     global list_wanderer
     list_wanderer = []
